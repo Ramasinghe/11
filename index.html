@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasma Travel - Management System</title>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; min-height: 100vh; }
+        
+        /* ===== LOGIN SCREEN ===== */
+        .login-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 50%, #1e3a5f 100%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+        .login-screen.hidden { display: none; }
+        .login-card {
+            background: white; border-radius: 16px; padding: 40px; width: 100%; max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+        }
+        .login-card .logo { font-size: 48px; margin-bottom: 10px; }
+        .login-card h2 { color: #1e3a5f; margin-bottom: 8px; }
+        .login-card .subtitle { color: #6b7c93; font-size: 14px; margin-bottom: 25px; }
+        .login-form .form-group { margin-bottom: 18px; text-align: left; }
+        .login-form label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .login-form input, .login-form select {
+            width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 15px; outline: none; background: #fafbfc; transition: all 0.3s ease;
+        }
+        .login-form input:focus, .login-form select:focus { border-color: #2c5f8a; background: white; box-shadow: 0 0 0 3px rgba(44,95,138,0.1); }
+        .login-form .btn { width: 100%; justify-content: center; margin-top: 10px; }
+        .login-error { color: #e53e3e; font-size: 13px; margin-top: 10px; display: none; }
+        .login-footer { margin-top: 25px; font-size: 12px; color: #6b7c93; }
+        .login-footer code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; }
+
+        /* ===== MAIN APP ===== */
+        .header { background: linear-gradient(135deg, #1e3a5f, #2c5f8a); color: white; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 3px 15px rgba(0,0,0,0.2); }
+        .header .logo { display: flex; align-items: center; gap: 15px; }
+        .header h1 { font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+        .header .subtitle { font-size: 12px; opacity: 0.8; letter-spacing: 2px; text-transform: uppercase; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        .header .user-avatar { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .header .user-role { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .header .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.3s ease; }
+        .header .logout-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .tabs-container { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0 40px; }
+        .tabs-nav { display: flex; gap: 0; list-style: none; overflow-x: auto; }
+        .tabs-nav li button { background: none; border: none; padding: 16px 28px; font-size: 15px; font-weight: 600; color: #6b7c93; cursor: pointer; transition: all 0.3s ease; border-bottom: 3px solid transparent; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .tabs-nav li button:hover { color: #1e3a5f; background: #f0f4f8; }
+        .tabs-nav li button.active { color: #1e3a5f; border-bottom: 3px solid #2c5f8a; }
+        .tabs-nav li button .tab-icon { font-size: 18px; }
+        .tabs-nav li button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .main-content { padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .page-title { font-size: 22px; font-weight: 700; color: #1e3a5f; margin-bottom: 6px; }
+        .page-description { color: #6b7c93; font-size: 14px; margin-bottom: 25px; }
+        .form-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 30px; margin-bottom: 30px; }
+        .form-card h3 { font-size: 18px; color: #1e3a5f; margin-bottom: 5px; }
+        .form-card .form-subtitle { color: #6b7c93; font-size: 13px; margin-bottom: 25px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group label .required { color: #e53e3e; margin-left: 2px; }
+        .form-group input, .form-group select { padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; transition: all 0.3s ease; outline: none; background: #fafbfc; }
+        .form-group input:focus, .form-group select:focus { border-color: #2c5f8a; background: white; box-shadow: 0 0 0 3px rgba(44, 95, 138, 0.1); }
+        .form-group input::placeholder { color: #a0aec0; }
+        .form-group input.error { border-color: #e53e3e; box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1); }
+        .form-actions { display: flex; gap: 12px; justify-content: flex-end; }
+        
+        .btn { padding: 12px 28px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background: linear-gradient(135deg, #1e3a5f, #2c5f8a); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(30, 58, 95, 0.3); }
+        .btn-secondary { background: #edf2f7; color: #4a5568; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-danger { background: #fff5f5; color: #e53e3e; padding: 6px 14px; font-size: 13px; }
+        .btn-danger:hover { background: #fed7d7; }
+        .btn-edit { background: #ebf8ff; color: #2c5f8a; padding: 6px 14px; font-size: 13px; }
+        .btn-edit:hover { background: #bee3f8; }
+        .btn-success { background: #f0fff4; color: #276749; }
+        .btn-success:hover { background: #c6f6d5; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        
+        .table-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+        .table-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-bottom: 1px solid #edf2f7; flex-wrap: wrap; gap: 10px; }
+        .table-header h3 { font-size: 16px; color: #1e3a5f; }
+        .search-box { display: flex; align-items: center; background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 0 12px; transition: all 0.3s ease; }
+        .search-box:focus-within { border-color: #2c5f8a; background: white; }
+        .search-box .search-icon { color: #a0aec0; margin-right: 8px; }
+        .search-box input { border: none; outline: none; padding: 10px 0; font-size: 14px; background: transparent; min-width: 200px; }
+        .count-badge { background: #ebf8ff; color: #2c5f8a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        table thead { background: #f7fafc; }
+        table thead th { padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7c93; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #edf2f7; }
+        table tbody tr { transition: background 0.2s ease; }
+        table tbody tr:hover { background: #f7fafc; }
+        table tbody td { padding: 14px 20px; font-size: 14px; color: #4a5568; border-bottom: 1px solid #f0f0f0; }
+        .highlight { font-weight: 600; color: #1e3a5f; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-block; }
+        .badge-yes { background: #f0fff4; color: #276749; }
+        .badge-no { background: #fff5f5; color: #c53030; }
+        .badge-yellow { background: #fefcbf; color: #744210; }
+        .badge-admin { background: #1e3a5f; color: white; }
+        .badge-staff { background: #2c5f8a; color: white; }
+        .badge-driver { background: #744210; color: white; }
+        .action-buttons { display: flex; gap: 6px; }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #a0aec0; }
+        .empty-state .empty-icon { font-size: 60px; margin-bottom: 15px; }
+        .empty-state h4 { font-size: 18px; color: #6b7c93; margin-bottom: 5px; }
+        
+        .toast { position: fixed; top: 20px; right: 20px; background: white; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 16px 24px; display: flex; align-items: center; gap: 12px; z-index: 1000; transform: translateX(400px); transition: transform 0.4s ease; border-left: 4px solid #48bb78; }
+        .toast.show { transform: translateX(0); }
+        .toast .toast-icon { font-size: 22px; }
+        .toast .toast-message { font-size: 14px; font-weight: 500; color: #2d3748; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 14px; width: 600px; max-width: 95%; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal h3 { font-size: 20px; color: #1e3a5f; margin-bottom: 20px; }
+        .modal .form-group { margin-bottom: 18px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .stat-icon.blue { background: #ebf8ff; }
+        .stat-icon.green { background: #f0fff4; }
+        .stat-icon.orange { background: #fffaf0; }
+        .stat-info h4 { font-size: 22px; color: #1e3a5f; }
+        .stat-info p { font-size: 12px; color: #6b7c93; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .conditional-section { display: none; margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #2c5f8a; }
+        .conditional-section.visible { display: block; animation: fadeIn 0.2s ease; }
+        
+        .file-input-wrap { position: relative; }
+        .file-input-wrap input[type="file"] { width: 100%; }
+        .file-name-display { font-size: 12px; color: #6b7c93; margin-top: 4px; font-style: italic; }
+        
+        .calc-preview-box { background: linear-gradient(135deg, #f8fafc, #edf2f7); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #cbd5e0; }
+        .calc-preview-box span { font-size: 14px; color: #4a5568; display: block; margin-bottom: 5px; }
+        .calc-preview-box strong { font-size: 28px; color: #2c5f8a; }
+        
+        .info-tip { background: #ebf8ff; padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #2b6cb0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        /* ===== INVOICE PREVIEW (Hidden, for PDF) ===== */
+        #invoice-template {
+            position: absolute; left: -9999px; top: -9999px;
+            width: 800px; padding: 40px; background: white; font-family: 'Segoe UI', sans-serif;
+            border: 1px solid #e2e8f0;
+        }
+        #invoice-template .inv-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1e3a5f; padding-bottom: 20px; margin-bottom: 25px; }
+        #invoice-template .inv-logo { font-size: 24px; font-weight: 700; color: #1e3a5f; }
+        #invoice-template .inv-title { font-size: 28px; font-weight: 700; color: #2c5f8a; text-align: right; }
+        #invoice-template .inv-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        #invoice-template .inv-section h4 { color: #1e3a5f; margin: 15px 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        #invoice-template .inv-details { font-size: 14px; line-height: 1.8; color: #4a5568; }
+        #invoice-template .inv-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        #invoice-template .inv-table th { background: #f7fafc; padding: 12px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7c93; border-bottom: 2px solid #edf2f7; }
+        #invoice-template .inv-table td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+        #invoice-template .inv-total { text-align: right; margin-top: 20px; }
+        #invoice-template .inv-total strong { font-size: 22px; color: #276749; }
+        #invoice-template .inv-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #edf2f7; font-size: 12px; color: #6b7c93; text-align: center; }
+        #invoice-template .inv-signature { margin-top: 30px; display: flex; justify-content: space-between; }
+        #invoice-template .inv-signature div { border-top: 1px solid #4a5568; padding-top: 5px; width: 200px; text-align: center; font-size: 13px; }
+
+        @media (max-width: 768px) {
+            .header { padding: 15px 20px; }
+            .main-content { padding: 20px; }
+            .tabs-container { padding: 0 10px; }
+            .tabs-nav { min-width: 500px; }
+            .tabs-nav li button { padding: 14px 16px; font-size: 13px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .table-header { flex-direction: column; align-items: stretch; }
+            .search-box input { min-width: 150px; }
+            #invoice-template { width: 100%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <div class="logo">✈️</div>
+            <h2>Tasma Travel</h2>
+            <p class="subtitle">Travel Management System</p>
+            <form class="login-form" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="loginUser" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPass" placeholder="Enter password" required>
+                </div>
+                <div class="form-group">
+                    <label>User Role</label>
+                    <select id="loginRole" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">👑 Administrator</option>
+                        <option value="staff">👔 Staff Member</option>
+                        <option value="driver">🚗 Driver</option>
+                    </select>
+                </div>
+                <p class="login-error" id="loginError">❌ Invalid credentials. Try: admin / admin123</p>
+                <button type="submit" class="btn btn-primary">🔐 Login</button>
+            </form>
+            <div class="login-footer">
+                <p>Demo Credentials:</p>
+                <p><code>admin</code> / <code>admin123</code> → Full Access</p>
+                <p><code>staff</code> / <code>staff123</code> → View + Create</p>
+                <p><code>driver</code> / <code>driver123</code> → View Only</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP (Hidden until login) ===== -->
+    <div id="mainApp" style="display:none;">
+        <div class="header">
+            <div class="logo"><span class="logo-icon">✈️</span><div><h1>Tasma Travel</h1><span class="subtitle">Travel Management System</span></div></div>
+            <div class="user-info">
+                <span id="currentUser">Welcome, User</span>
+                <span class="user-role" id="userRoleBadge">Admin</span>
+                <div class="user-avatar">👤</div>
+                <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+            </div>
+        </div>
+        
+        <div class="tabs-container">
+            <ul class="tabs-nav">
+                <li><button class="active" onclick="switchTab('client')"><span class="tab-icon">👥</span> Clients</button></li>
+                <li><button onclick="switchTab('vehicles')"><span class="tab-icon">🚗</span> Vehicles</button></li>
+                <li><button onclick="switchTab('assignments')"><span class="tab-icon">📌</span> Assignments</button></li>
+                <li><button onclick="switchTab('rates')"><span class="tab-icon">💰</span> Rates & Payments</button></li>
+                <li><button onclick="switchTab('invoices')"><span class="tab-icon">🧾</span> Invoices</button></li>
+                <li><button onclick="switchTab('gps')"><span class="tab-icon">📍</span> GPS Monitoring</button></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <!-- CLIENT TAB -->
+            <div id="tab-client" class="tab-content active">
+                <h2 class="page-title">Client Management</h2>
+                <p class="page-description">Add, manage, and organize your client database</p>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-icon blue">👥</div><div class="stat-info"><h4 id="total-clients">0</h4><p>Total Clients</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><h4 id="active-clients">0</h4><p>Active Clients</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange">📅</div><div class="stat-info"><h4 id="today-clients">0</h4><p>Added Today</p></div></div>
+                </div>
+                <div class="form-card">
+                    <h3>➕ Add New Client</h3><p class="form-subtitle">Fill in the details below to register a new client</p>
+                    <form id="client-form" onsubmit="return addClient(event)">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Client Name <span class="required">*</span></label><input type="text" id="clientName" placeholder="Enter full name" required></div>
+                            <div class="form-group"><label>Username <span class="required">*</span></label><input type="text" id="clientUser" placeholder="Choose a username" required></div>
+                            <div class="form-group"><label>Telephone Number <span class="required">*</span></label><input type="tel" id="clientPhone" placeholder="+94 77 123 4567" required></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetClientForm()">🔄 Reset</button>
+                            <button type="submit" class="btn btn-primary">💾 Add Client</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><h3>📋 Registered Clients</h3><div style="display:flex; align-items:center; gap:15px;"><span class="count-badge" id="client-count-badge">0 clients</span><div class="search-box"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="Search clients..." oninput="searchClients()"></div></div></div>
+                    <div id="table-container">
+                        <div class="empty-state" id="empty-state"><div class="empty-icon">📭</div><h4>No Clients Yet</h4><p>Add your first client using the form above</p></div>
+                        <table id="clients-table" style="display:none;"><thead><tr><th>#</th><th>Client Name</th><th>Username</th><th>Telephone Number</th><th>Date Added</th><th>Actions</th></tr></thead><tbody id="clients-tbody"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VEHICLES TAB -->
+            <div id="tab-vehicles" class="tab-content">
+                <h2 class="page-title">Vehicle Fleet Management</h2>
+                <div class="info-tip">💡 One vehicle can be assigned to multiple clients across different trips/assignments.</div>
+                <p class="page-description">Register, track, and manage all travel vehicles & staff</p>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-icon blue">🚗</div><div class="stat-info"><h4 id="total-vehicles">0</h4><p>Total Vehicles</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green">📍</div><div class="stat-info"><h4 id="gps-vehicles">0</h4><p>GPS Enabled</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange">👨‍✈️</div><div class="stat-info"><h4 id="total-drivers">0</h4><p>Assigned Drivers</p></div></div>
+                </div>
+                <div class="form-card">
+                    <h3>➕ Register New Vehicle</h3><p class="form-subtitle">Fill in vehicle details, documents, and driver information</p>
+                    <form id="vehicle-form" onsubmit="return addVehicle(event)">
+                        <h4 style="color:#1e3a5f; margin: 0 0 15px 0; font-size:16px;">📝 Vehicle Information</h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Vehicle Type <span class="required">*</span></label>
+                                <select id="vType" required>
+                                    <option value="">Select Type</option><option value="Car">🚘 Car</option><option value="Van">🚐 Van</option><option value="Bus">🚌 Bus</option><option value="Lorry">🚚 Lorry</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Vehicle Number <span class="required">*</span></label><input type="text" id="vNumber" placeholder="e.g., WP-1234" required></div>
+                            <div class="form-group"><label>GPS Unit Installed?</label>
+                                <select id="vGps"><option value="Yes">✅ Yes</option><option value="No">❌ No</option></select>
+                            </div>
+                            <div class="form-group"><label>Registration Date <span class="required">*</span></label><input type="date" id="vRegDate" required></div>
+                            <div class="form-group"><label>Assigned User ID</label><input type="text" id="vUserId" placeholder="e.g., USR-001"></div>
+                        </div>
+                        <h4 style="color:#1e3a5f; margin: 15px 0; font-size:16px;">📎 Documents & Reports</h4>
+                        <div class="form-grid">
+                            <div class="form-group file-input-wrap"><label>Vehicle Image</label><input type="file" id="vImg" accept="image/*" onchange="updateFileName(this)"><span class="file-name-display" id="vImg-name">No file chosen</span></div>
+                            <div class="form-group file-input-wrap"><label>Book Copy</label><input type="file" id="vBook" onchange="updateFileName(this)"><span class="file-name-display" id="vBook-name">No file chosen</span></div>
+                            <div class="form-group file-input-wrap"><label>Fitness Report</label><input type="file" id="vFitness" onchange="updateFileName(this)"><span class="file-name-display" id="vFitness-name">No file chosen</span></div>
+                            <div class="form-group file-input-wrap"><label>Revenue License</label><input type="file" id="vRevenue" onchange="updateFileName(this)"><span class="file-name-display" id="vRevenue-name">No file chosen</span></div>
+                            <div class="form-group file-input-wrap"><label>Emission Test</label><input type="file" id="vEmission" onchange="updateFileName(this)"><span class="file-name-display" id="vEmission-name">No file chosen</span></div>
+                            <div class="form-group file-input-wrap"><label>Other Docs</label><input type="file" id="vDocs" onchange="updateFileName(this)"><span class="file-name-display" id="vDocs-name">No file chosen</span></div>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                                <input type="checkbox" id="vOwnerDiff" onchange="toggleSection('vOwnerDiff', 'vOwnerSection')">
+                                <span style="font-weight:600; color:#4a5568;">Owner different from original?</span>
+                            </label>
+                        </div>
+                        <div id="vOwnerSection" class="conditional-section">
+                            <div class="form-group file-input-wrap"><label>Handover Document <span class="required">*</span></label><input type="file" id="vHandover" onchange="updateFileName(this)"><span class="file-name-display" id="vHandover-name">No file chosen</span></div>
+                        </div>
+                        <h4 style="color:#1e3a5f; margin: 25px 0 15px 0; font-size:16px;">👨‍✈️ Driver Details <span class="required">*</span></h4>
+                        <div class="form-grid">
+                            <div class="form-group"><label>Driver Name <span class="required">*</span></label><input type="text" id="dName" placeholder="Full name" required></div>
+                            <div class="form-group"><label>Driver Telephone <span class="required">*</span></label><input type="tel" id="dTel" placeholder="+94 77 987 6543" required></div>
+                            <div class="form-group"><label>Driver ID <span class="required">*</span></label><input type="text" id="dId" placeholder="NIC/Passport" required></div>
+                            <div class="form-group"><label>License Number <span class="required">*</span></label><input type="text" id="dLic" placeholder="License No" required></div>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight:600; color:#4a5568; display:block; margin-bottom:8px;">Helper Required?</label>
+                            <select id="hToggle" onchange="toggleSection('hToggle', 'hSection', 'Yes')" style="width:100%; max-width:300px;">
+                                <option value="No">🚫 No Helper</option><option value="Yes">🙋 Add Helper</option>
+                            </select>
+                        </div>
+                        <div id="hSection" class="conditional-section">
+                            <h5 style="color:#2c5f8a; margin-bottom:15px;">Helper Information</h5>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Helper Name</label><input type="text" id="hName" placeholder="Full name"></div>
+                                <div class="form-group"><label>Helper Telephone</label><input type="tel" id="hTel" placeholder="Phone number"></div>
+                                <div class="form-group"><label>Helper ID</label><input type="text" id="hId" placeholder="NIC/Passport"></div>
+                                <div class="form-group"><label>Helper License</label><input type="text" id="hLic" placeholder="License or N/A"></div>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top:25px;">
+                            <button type="button" class="btn btn-secondary" onclick="resetVehicleForm()">🔄 Reset</button>
+                            <button type="submit" class="btn btn-primary">💾 Add Vehicle</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><h3>📋 Registered Vehicles</h3><div style="display:flex; align-items:center; gap:15px;"><span class="count-badge" id="v-count-badge">0 vehicles</span><div class="search-box"><span class="search-icon">🔍</span><input type="text" id="vSearchInput" placeholder="Search vehicles/drivers..." oninput="searchVehicles()"></div></div></div>
+                    <div id="v-table-container">
+                        <div class="empty-state" id="v-empty-state"><div class="empty-icon">🅿️</div><h4>No Vehicles Yet</h4><p>Add your first vehicle using the form above</p></div>
+                        <table id="v-table" style="display:none;"><thead><tr><th>#</th><th>Type</th><th>Vehicle No.</th><th>GPS</th><th>Driver</th><th>Helper</th><th>Reg. Date</th><th>Actions</th></tr></thead><tbody id="v-tbody"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASSIGNMENTS TAB -->
+            <div id="tab-assignments" class="tab-content">
+                <h2 class="page-title">Client & Vehicle Assignments</h2>
+                <div class="info-tip">🔁 A single vehicle can be assigned to multiple clients for different dates/trips.</div>
+                <p class="page-description">Link registered clients to available vehicles for trips</p>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-icon blue">📌</div><div class="stat-info"><h4 id="total-assignments">0</h4><p>Total Assignments</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green">🟢</div><div class="stat-info"><h4 id="active-assignments">0</h4><p>Active</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange">📅</div><div class="stat-info"><h4 id="today-assignments">0</h4><p>Created Today</p></div></div>
+                </div>
+                <div class="form-card">
+                    <h3>➕ Create New Assignment</h3><p class="form-subtitle">Select a client and vehicle to link them</p>
+                    <form id="assignment-form" onsubmit="return addAssignment(event)">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Select Client <span class="required">*</span></label>
+                                <select id="aClient" required><option value="">-- Choose Client --</option></select>
+                            </div>
+                            <div class="form-group"><label>Select Vehicle <span class="required">*</span></label>
+                                <select id="aVehicle" required><option value="">-- Choose Vehicle --</option></select>
+                            </div>
+                            <div class="form-group"><label>Assignment Date <span class="required">*</span></label>
+                                <input type="date" id="aDate" required>
+                            </div>
+                            <div class="form-group"><label>Status</label>
+                                <select id="aStatus">
+                                    <option value="Active">🟢 Active</option>
+                                    <option value="Pending">🟡 Pending</option>
+                                    <option value="Completed">🔴 Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetAssignmentForm()">🔄 Reset</button>
+                            <button type="submit" class="btn btn-primary">💾 Create Assignment</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>📋 Assignment Records</h3>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <span class="count-badge" id="a-count-badge">0 assignments</span>
+                            <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="aSearchInput" placeholder="Search by client, vehicle or driver..." oninput="searchAssignments()"></div>
+                        </div>
+                    </div>
+                    <div id="a-table-container">
+                        <div class="empty-state" id="a-empty-state"><div class="empty-icon">🔗</div><h4>No Assignments Yet</h4><p>Link a client to a vehicle above</p></div>
+                        <table id="a-table" style="display:none;"><thead><tr><th>#</th><th>Client</th><th>Vehicle</th><th>Driver</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="a-tbody"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RATES & PAYMENTS TAB (LKR Currency) -->
+            <div id="tab-rates" class="tab-content">
+                <h2 class="page-title">Rates & Payment Calculator</h2>
+                <p class="page-description">Configure pricing formats and automatically calculate total payments in Sri Lankan Rupees</p>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-icon blue">💰</div><div class="stat-info"><h4 id="total-rates">0</h4><p>Total Rate Entries</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green">📈</div><div class="stat-info"><h4 id="total-revenue">Rs. 0</h4><p>Total Calculated</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange">📊</div><div class="stat-info"><h4 id="avg-rate">Rs. 0</h4><p>Avg. Rate</p></div></div>
+                </div>
+                <div class="form-card">
+                    <h3>💵 Configure Rate & Calculate Payment</h3>
+                    <p class="form-subtitle">Choose pricing format, enter values in Rs., and see live calculation</p>
+                    <form id="rate-form" onsubmit="return addRate(event)">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Rate Format <span class="required">*</span></label>
+                                <select id="rType" required onchange="updateRateFields()">
+                                    <option value="">Select Format</option>
+                                    <option value="Per Day">📅 Per Day</option>
+                                    <option value="Per Trip">🛣️ Per Trip</option>
+                                    <option value="Per KM">📏 Per KM</option>
+                                    <option value="Per Case">📦 Per Case</option>
+                                    <option value="Per Package">🎁 Per Package</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Base Rate (Rs.) <span class="required">*</span></label><input type="number" id="rBase" step="0.01" placeholder="0.00" required oninput="liveCalc()"></div>
+                            <div class="form-group"><label id="rQtyLabel">Quantity <span class="required">*</span></label><input type="number" id="rQty" step="0.01" placeholder="0" required oninput="liveCalc()"></div>
+                            <div class="form-group"><label>Linked Vehicle</label><select id="rVehicle"><option value="">-- Optional --</option></select></div>
+                            <div class="form-group"><label>Linked Client</label><select id="rClient"><option value="">-- Optional --</option></select></div>
+                        </div>
+                        <div class="calc-preview-box">
+                            <span>Calculated Total Payment (LKR)</span>
+                            <strong id="calcPreview">Rs. 0.00</strong>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetRateForm()">🔄 Reset</button>
+                            <button type="submit" class="btn btn-primary">💾 Save Rate</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><h3>📋 Saved Rates & Payments</h3><div style="display:flex; align-items:center; gap:15px;"><span class="count-badge" id="r-count-badge">0 rates</span><div class="search-box"><span class="search-icon">🔍</span><input type="text" id="rSearchInput" placeholder="Search rates..." oninput="searchRates()"></div></div></div>
+                    <div id="r-table-container">
+                        <div class="empty-state" id="r-empty-state"><div class="empty-icon">💵</div><h4>No Rates Yet</h4><p>Add your first rate configuration above</p></div>
+                        <table id="r-table" style="display:none;"><thead><tr><th>#</th><th>Format</th><th>Base Rate</th><th>Qty</th><th>Total Payment</th><th>Vehicle</th><th>Client</th><th>Actions</th></tr></thead><tbody id="r-tbody"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVOICES TAB -->
+            <div id="tab-invoices" class="tab-content">
+                <h2 class="page-title">Invoice Generation</h2>
+                <p class="page-description">Generate professional PDF invoices from assignments or rate entries</p>
+                <div class="form-card">
+                    <h3>🧾 Create New Invoice</h3>
+                    <p class="form-subtitle">Select source data and generate downloadable PDF invoice</p>
+                    <form id="invoice-form" onsubmit="return generateInvoice(event)">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Invoice Source</label>
+                                <select id="invSource" required onchange="updateInvoiceSource()">
+                                    <option value="">Select Source</option>
+                                    <option value="rate">💰 From Rate Entry</option>
+                                    <option value="assignment">📌 From Assignment</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="invRateGroup" style="display:none;">
+                                <label>Select Rate Entry</label>
+                                <select id="invRateSelect"><option value="">-- Choose Rate --</option></select>
+                            </div>
+                            <div class="form-group" id="invAssignGroup" style="display:none;">
+                                <label>Select Assignment</label>
+                                <select id="invAssignSelect"><option value="">-- Choose Assignment --</option></select>
+                            </div>
+                            <div class="form-group"><label>Invoice Number</label><input type="text" id="invNumber" placeholder="INV-2024-001" required></div>
+                            <div class="form-group"><label>Invoice Date</label><input type="date" id="invDate" required></div>
+                            <div class="form-group"><label>Due Date</label><input type="date" id="invDue" required></div>
+                            <div class="form-group"><label>Notes / Terms</label><input type="text" id="invNotes" placeholder="Payment due within 14 days"></div>
+                        </div>
+                        <div class="calc-preview-box">
+                            <span>Invoice Total (Preview)</span>
+                            <strong id="invPreview">Rs. 0.00</strong>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetInvoiceForm()">🔄 Reset</button>
+                            <button type="submit" class="btn btn-success">📄 Generate PDF Invoice</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><h3>📋 Generated Invoices</h3><div style="display:flex; align-items:center; gap:15px;"><span class="count-badge" id="inv-count-badge">0 invoices</span></div></div>
+                    <div id="inv-table-container">
+                        <div class="empty-state" id="inv-empty-state"><div class="empty-icon">🧾</div><h4>No Invoices Yet</h4><p>Generate your first invoice above</p></div>
+                        <table id="inv-table" style="display:none;"><thead><tr><th>#</th><th>Invoice #</th><th>Client</th><th>Vehicle</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inv-tbody"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GPS MONITORING TAB -->
+            <div id="tab-gps" class="tab-content">
+                <h2 class="page-title">GPS Fleet Monitoring</h2>
+                <p class="page-description">Track your vehicles in real-time via TraceMe365 GPS platform</p>
+                
+                <div class="form-card" style="text-align:center; padding:50px 30px;">
+                    <div style="font-size:64px; margin-bottom:20px;">🛰️</div>
+                    <h3 style="color:#1e3a5f; margin-bottom:10px;">Live GPS Tracking</h3>
+                    <p style="color:#6b7c93; margin-bottom:25px; max-width:500px; margin-left:auto; margin-right:auto;">
+                        Access the TraceMe365 platform to monitor your fleet in real-time, view routes, geofences, and driver behavior analytics.
+                    </p>
+                    
+                    <div style="display:flex; gap:15px; justify-content:center; flex-wrap:wrap; margin-bottom:30px;">
+                        <a href="https://pro.traceme365.com/?lang=en" target="_blank" class="btn btn-primary" style="font-size:16px; padding:14px 32px;">
+                            🛰️ Open TraceMe365 GPS Platform
+                        </a>
+                        <button class="btn btn-secondary" onclick="showGpsHelp()">❓ How to Setup</button>
+                    </div>
+                    
+                    <div class="info-tip" style="display:inline-flex; text-align:left; max-width:600px;">
+                        <span style="font-size:18px; margin-right:8px;">💡</span>
+                        <span><strong>Tip:</strong> Ensure your vehicles have active GPS units installed. Contact TraceMe365 support for device pairing assistance.</span>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🚗</div>
+                        <div class="stat-info">
+                            <h4 id="gps-online">0</h4>
+                            <p>Vehicles Online</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📍</div>
+                        <div class="stat-info">
+                            <h4 id="gps-moving">0</h4>
+                            <p>Currently Moving</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⚠️</div>
+                        <div class="stat-info">
+                            <h4 id="gps-alerts">0</h4>
+                            <p>Active Alerts</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GPS Vehicle List (Demo) -->
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>📋 Fleet Status Overview</h3>
+                        <span class="count-badge" id="gps-count-badge">0 vehicles</span>
+                    </div>
+                    <div id="gps-table-container">
+                        <div class="empty-state" id="gps-empty-state">
+                            <div class="empty-icon">🛰️</div>
+                            <h4>No GPS Data Yet</h4>
+                            <p>Connect your vehicles to TraceMe365 to see live tracking data</p>
+                        </div>
+                        <table id="gps-table" style="display:none;">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle</th>
+                                    <th>Driver</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Last Update</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gps-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT VEHICLE MODAL -->
+        <div class="modal-overlay" id="editVModal">
+            <div class="modal">
+                <h3>✏️ Edit Vehicle</h3>
+                <form onsubmit="return saveEditVehicle(event)">
+                    <input type="hidden" id="editVIndex">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Vehicle Type</label><select id="editVType"><option value="Car">Car</option><option value="Van">Van</option><option value="Bus">Bus</option><option value="Lorry">Lorry</option></select></div>
+                        <div class="form-group"><label>Vehicle Number</label><input type="text" id="editVNumber" required></div>
+                        <div class="form-group"><label>GPS</label><select id="editVGps"><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                        <div class="form-group"><label>Registration Date</label><input type="date" id="editVRegDate" required></div>
+                    </div>
+                    <h4 style="margin:20px 0 10px 0; color:#1e3a5f;">Driver Details</h4>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Driver Name</label><input type="text" id="editDName" required></div>
+                        <div class="form-group"><label>Driver Tel</label><input type="tel" id="editDTel" required></div>
+                    </div>
+                    <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="closeModal('editVModal')">Cancel</button><button type="submit" class="btn btn-primary">💾 Save Changes</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast"><span class="toast-icon" id="toast-icon">✅</span><span class="toast-message" id="toast-message">Success!</span></div>
+
+        <!-- INVOICE TEMPLATE (Hidden, for PDF) -->
+        <div id="invoice-template">
+            <div class="inv-header">
+                <div class="inv-logo">✈️ Tasma Travel<br><small style="font-size:14px;color:#6b7c93">Travel Management System</small></div>
+                <div class="inv-title">INVOICE</div>
+            </div>
+            <div class="inv-meta">
+                <div>
+                    <strong>Bill To:</strong><br>
+                    <span id="inv-client-name">Client Name</span><br>
+                    <span id="inv-client-phone">+94 77 123 4567</span><br>
+                    <span id="inv-client-user">@username</span>
+                </div>
+                <div style="text-align:right;">
+                    <strong>Invoice Details:</strong><br>
+                    Invoice #: <span id="inv-number">INV-001</span><br>
+                    Date: <span id="inv-date-display">2024-01-15</span><br>
+                    Due: <span id="inv-due-display">2024-01-29</span>
+                </div>
+            </div>
+            <div class="inv-section">
+                <h4>Service Details</h4>
+                <div class="inv-details">
+                    <strong>Vehicle:</strong> <span id="inv-vehicle">WP-1234 (Bus)</span><br>
+                    <strong>Driver:</strong> <span id="inv-driver">Driver Name</span><br>
+                    <strong>Rate Type:</strong> <span id="inv-rate-type">Per KM</span><br>
+                    <strong>Description:</strong> <span id="inv-desc">Travel service</span>
+                </div>
+            </div>
+            <table class="inv-table">
+                <thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td id="inv-item-desc">Travel Service</td>
+                        <td id="inv-item-qty">1</td>
+                        <td id="inv-item-rate">Rs. 0.00</td>
+                        <td id="inv-item-amount">Rs. 0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="inv-total">
+                <strong>Total Amount: <span id="inv-total">Rs. 0.00</span></strong>
+            </div>
+            <div class="inv-signature">
+                <div>Authorized Signature</div>
+                <div>Date: <span id="inv-sign-date"></span></div>
+            </div>
+            <div class="inv-footer">
+                <strong>Tasma Travel (Pvt) Ltd</strong><br>
+                123 Galle Road, Colombo 03, Sri Lanka<br>
+                📞 +94 11 234 5678 | ✉️ info@tasmatravel.lk<br>
+                <em>Thank you for choosing Tasma Travel! Payment due within 14 days.</em>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GLOBAL DATA STORES =====
+        let clients = JSON.parse(localStorage.getItem('tasmaClients')) || [];
+        let vehicles = JSON.parse(localStorage.getItem('tasmaVehicles')) || [];
+        let assignments = JSON.parse(localStorage.getItem('tasmaAssignments')) || [];
+        let rates = JSON.parse(localStorage.getItem('tasmaRates')) || [];
+        let invoices = JSON.parse(localStorage.getItem('tasmaInvoices')) || [];
+        let users = JSON.parse(localStorage.getItem('tasmaUsers')) || [
+            { username: 'admin', password: 'admin123', role: 'admin', name: 'System Administrator' },
+            { username: 'staff', password: 'staff123', role: 'staff', name: 'Staff Member' },
+            { username: 'driver', password: 'driver123', role: 'driver', name: 'Vehicle Driver' }
+        ];
+        let currentUser = null;
+
+        // ===== LKR CURRENCY FORMATTER =====
+        function formatLKR(amount) {
+            return 'Rs. ' + parseFloat(amount).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ===== LOGIN / LOGOUT =====
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value;
+            const role = document.getElementById('loginRole').value;
+            const error = document.getElementById('loginError');
+            
+            const found = users.find(u => u.username === user && u.password === pass && u.role === role);
+            if(found) {
+                currentUser = { username: found.username, role: found.role, name: found.name };
+                sessionStorage.setItem('tasmaCurrentUser', JSON.stringify(currentUser));
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').style.display = 'block';
+                initApp();
+                showToast(`Welcome, ${found.name}!`, '👋');
+            } else {
+                error.style.display = 'block';
+                setTimeout(() => error.style.display = 'none', 3000);
+            }
+            return false;
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            sessionStorage.removeItem('tasmaCurrentUser');
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('loginRole').value = '';
+            showToast('Logged out successfully', '👋');
+        }
+
+        function checkAuth() {
+            const saved = sessionStorage.getItem('tasmaCurrentUser');
+            if(saved) {
+                currentUser = JSON.parse(saved);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').style.display = 'block';
+                initApp();
+            }
+        }
+
+        function initApp() {
+            document.getElementById('currentUser').textContent = `Welcome, ${currentUser.name}`;
+            document.getElementById('userRoleBadge').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+            document.getElementById('userRoleBadge').className = `user-role badge-${currentUser.role}`;
+            
+            // Role-based UI restrictions
+            const isDriver = currentUser.role === 'driver';
+            const isStaff = currentUser.role === 'staff' || isDriver;
+            
+            // Disable forms for driver role
+            if(isDriver) {
+                document.querySelectorAll('form').forEach(f => f.querySelectorAll('input,select,button[type="submit"]').forEach(el => {
+                    if(!el.closest('#invoice-form')) el.disabled = true;
+                }));
+                document.querySelectorAll('.btn-primary, .btn-success').forEach(btn => {
+                    if(!btn.closest('#invoice-form')) btn.disabled = true;
+                });
+            }
+            
+            // Hide delete buttons for non-admin
+            if(currentUser.role !== 'admin') {
+                document.querySelectorAll('.btn-danger').forEach(btn => btn.style.display = 'none');
+            }
+            
+            // Initialize data
+            renderClients(); updateClientStats();
+            renderVehicles(); updateVStats();
+            renderAssignments(); updateAStats();
+            renderRates(); updateRStats();
+            renderInvoices();
+            populateAssignmentDropdowns();
+            populateRateDropdowns();
+            populateInvoiceDropdowns();
+            updateGpsStats();
+            document.getElementById('aDate').valueAsDate = new Date();
+            document.getElementById('invDate').valueAsDate = new Date();
+            document.getElementById('invDue').valueAsDate = new Date(Date.now() + 14*24*60*60*1000);
+            updateRateFields();
+        }
+
+        // ===== TAB SWITCHING =====
+        function switchTab(tabName) {
+            document.querySelectorAll('.tabs-nav button').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('button').classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            if(tabName === 'assignments') populateAssignmentDropdowns();
+            if(tabName === 'rates') populateRateDropdowns();
+            if(tabName === 'invoices') populateInvoiceDropdowns();
+            if(tabName === 'gps') updateGpsStats();
+        }
+
+        // ===== CONDITIONAL SECTIONS =====
+        function toggleSection(checkboxId, sectionId, matchValue = true) {
+            const el = document.getElementById(checkboxId);
+            const sec = document.getElementById(sectionId);
+            if (matchValue === true) sec.classList.toggle('visible', el.checked);
+            else sec.classList.toggle('visible', el.value === matchValue);
+        }
+
+        // ===== FILE NAME DISPLAY =====
+        function updateFileName(input) {
+            document.getElementById(input.id + '-name').textContent = input.files[0] ? input.files[0].name : 'No file chosen';
+        }
+
+        // ===== DROPDOWN POPULATORS =====
+        function populateAssignmentDropdowns() {
+            const cSel = document.getElementById('aClient'), vSel = document.getElementById('aVehicle');
+            const currC = cSel.value, currV = vSel.value;
+            cSel.innerHTML = '<option value="">-- Choose Client --</option>';
+            clients.forEach((c, i) => cSel.innerHTML += `<option value="${i}">${c.name} (${c.phone})</option>`);
+            vSel.innerHTML = '<option value="">-- Choose Vehicle --</option>';
+            vehicles.forEach((v, i) => vSel.innerHTML += `<option value="${i}">${v.number} - ${v.type} (${v.driver.name})</option>`);
+            if(currC && clients[currC]) cSel.value = currC;
+            if(currV && vehicles[currV]) vSel.value = currV;
+        }
+
+        function populateRateDropdowns() {
+            const vSel = document.getElementById('rVehicle'), cSel = document.getElementById('rClient');
+            vSel.innerHTML = '<option value="">-- Optional --</option>';
+            cSel.innerHTML = '<option value="">-- Optional --</option>';
+            vehicles.forEach((v, i) => vSel.innerHTML += `<option value="${i}">${v.number} (${v.type})</option>`);
+            clients.forEach((c, i) => cSel.innerHTML += `<option value="${i}">${c.name}</option>`);
+        }
+
+        function populateInvoiceDropdowns() {
+            const rateSel = document.getElementById('invRateSelect');
+            const assignSel = document.getElementById('invAssignSelect');
+            rateSel.innerHTML = '<option value="">-- Choose Rate --</option>';
+            assignSel.innerHTML = '<option value="">-- Choose Assignment --</option>';
+            rates.forEach((r, i) => rateSel.innerHTML += `<option value="${i}">${r.type} - ${formatLKR(r.total)} (${r.client})</option>`);
+            assignments.forEach((a, i) => assignSel.innerHTML += `<option value="${i}">${a.clientName} → ${a.vehicleNumber} (${a.date})</option>`);
+            updateInvoicePreview();
+        }
+
+        // ===== INVOICE LOGIC =====
+        function updateInvoiceSource() {
+            const source = document.getElementById('invSource').value;
+            document.getElementById('invRateGroup').style.display = source === 'rate' ? 'block' : 'none';
+            document.getElementById('invAssignGroup').style.display = source === 'assignment' ? 'block' : 'none';
+            updateInvoicePreview();
+        }
+
+        function updateInvoicePreview() {
+            const source = document.getElementById('invSource').value;
+            let total = 0;
+            if(source === 'rate') {
+                const idx = document.getElementById('invRateSelect').value;
+                if(idx !== '') total = rates[idx]?.total || 0;
+            } else if(source === 'assignment') {
+                const idx = document.getElementById('invAssignSelect').value;
+                if(idx !== '') {
+                    const a = assignments[idx];
+                    const rate = rates.find(r => r.client === a.clientName && r.vehicle === a.vehicleNumber);
+                    total = rate?.total || 5000;
+                }
+            }
+            document.getElementById('invPreview').textContent = formatLKR(total);
+        }
+
+        function generateInvoice(e) {
+            e.preventDefault();
+            if(!currentUser) { showToast('Please login first', '❌'); return false; }
+            
+            const source = document.getElementById('invSource').value;
+            const invNum = document.getElementById('invNumber').value || `INV-${new Date().getFullYear()}-${String(invoices.length+1).padStart(3,'0')}`;
+            const invDate = document.getElementById('invDate').value;
+            const invDue = document.getElementById('invDue').value;
+            const notes = document.getElementById('invNotes').value || 'Payment due within 14 days';
+            
+            let client, vehicle, driver, amount, rateType, desc;
+            
+            if(source === 'rate') {
+                const idx = document.getElementById('invRateSelect').value;
+                if(idx === '') { showToast('Please select a rate entry', '❌'); return false; }
+                const r = rates[idx];
+                client = clients[r.client] || { name: r.client, phone: 'N/A' };
+                vehicle = vehicles[r.vehicle] || { number: r.vehicle, type: 'N/A', driver: { name: 'N/A' } };
+                amount = r.total;
+                rateType = r.type;
+                desc = `${r.type} service`;
+            } else if(source === 'assignment') {
+                const idx = document.getElementById('invAssignSelect').value;
+                if(idx === '') { showToast('Please select an assignment', '❌'); return false; }
+                const a = assignments[idx];
+                client = clients[a.clientId] || { name: a.clientName, phone: a.clientPhone };
+                vehicle = vehicles[a.vehicleId] || { number: a.vehicleNumber, type: a.vehicleType, driver: { name: a.driverName } };
+                amount = 5000 + (Math.random() * 10000);
+                rateType = 'Per Trip';
+                desc = `Assigned trip on ${a.date}`;
+            } else {
+                showToast('Please select invoice source', '❌'); return false;
+            }
+            
+            document.getElementById('inv-number').textContent = invNum;
+            document.getElementById('inv-date-display').textContent = invDate;
+            document.getElementById('inv-due-display').textContent = invDue;
+            document.getElementById('inv-client-name').textContent = client.name;
+            document.getElementById('inv-client-phone').textContent = client.phone || 'N/A';
+            document.getElementById('inv-client-user').textContent = client.user ? `@${client.user}` : '';
+            document.getElementById('inv-vehicle').textContent = `${vehicle.number} (${vehicle.type})`;
+            document.getElementById('inv-driver').textContent = vehicle.driver?.name || 'N/A';
+            document.getElementById('inv-rate-type').textContent = rateType;
+            document.getElementById('inv-desc').textContent = desc;
+            document.getElementById('inv-item-qty').textContent = '1';
+            document.getElementById('inv-item-rate').textContent = formatLKR(amount);
+            document.getElementById('inv-item-amount').textContent = formatLKR(amount);
+            document.getElementById('inv-total').textContent = formatLKR(amount);
+            document.getElementById('inv-sign-date').textContent = new Date().toLocaleDateString('en-LK');
+            
+            const { jsPDF } = window.jspdf;
+            const template = document.getElementById('invoice-template');
+            
+            html2canvas(template, { scale: 2, useCORS: true }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save(`TasmaTravel_Invoice_${invNum}.pdf`);
+                
+                invoices.push({
+                    id: Date.now(), number: invNum, clientId: client.id || 0, clientName: client.name,
+                    vehicleNumber: vehicle.number, amount, date: invDate, due: invDue, notes, source, sourceId: source === 'rate' ? document.getElementById('invRateSelect').value : document.getElementById('invAssignSelect').value
+                });
+                localStorage.setItem('tasmaInvoices', JSON.stringify(invoices));
+                renderInvoices();
+                showToast(`Invoice ${invNum} generated!`, '🧾');
+                resetInvoiceForm();
+            });
+            return false;
+        }
+
+        function renderInvoices() {
+            const tbody = document.getElementById('inv-tbody');
+            const table = document.getElementById('inv-table');
+            const empty = document.getElementById('inv-empty-state');
+            
+            if(invoices.length === 0) { table.style.display='none'; empty.style.display='block'; return; }
+            table.style.display='table'; empty.style.display='none';
+            
+            tbody.innerHTML = invoices.map((inv, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="highlight">${inv.number}</td>
+                    <td>${escapeHtml(inv.clientName)}</td>
+                    <td>${inv.vehicleNumber}</td>
+                    <td style="color:#276749;font-weight:600;">${formatLKR(inv.amount)}</td>
+                    <td>${inv.date}</td>
+                    <td><span class="badge badge-yes">Paid</span></td>
+                    <td><div class="action-buttons">
+                        <button class="btn btn-edit" onclick="reprintInvoice(${idx})">🖨️ Reprint</button>
+                        ${currentUser.role === 'admin' ? `<button class="btn btn-danger" onclick="deleteInvoice(${idx})">🗑️</button>` : ''}
+                    </div></td>
+                </tr>`).join('');
+            document.getElementById('inv-count-badge').textContent = invoices.length + ' invoice' + (invoices.length!==1?'s':'');
+        }
+
+        function reprintInvoice(idx) {
+            const inv = invoices[idx];
+            document.getElementById('invNumber').value = inv.number;
+            document.getElementById('invDate').value = inv.date;
+            document.getElementById('invDue').value = inv.due;
+            document.getElementById('invNotes').value = inv.notes || '';
+            document.getElementById('invSource').value = inv.source;
+            updateInvoiceSource();
+            if(inv.source === 'rate') document.getElementById('invRateSelect').value = inv.sourceId;
+            else document.getElementById('invAssignSelect').value = inv.sourceId;
+            updateInvoicePreview();
+            generateInvoice(new Event('submit'));
+        }
+
+        function deleteInvoice(idx) {
+            if(confirm('Delete this invoice record?')) {
+                invoices.splice(idx, 1);
+                localStorage.setItem('tasmaInvoices', JSON.stringify(invoices));
+                renderInvoices();
+                showToast('Invoice deleted.', '🗑️');
+            }
+        }
+
+        function resetInvoiceForm() {
+            document.getElementById('invoice-form').reset();
+            document.getElementById('invPreview').textContent = 'Rs. 0.00';
+            document.getElementById('invRateGroup').style.display = 'none';
+            document.getElementById('invAssignGroup').style.display = 'none';
+            populateInvoiceDropdowns();
+            document.getElementById('invDate').valueAsDate = new Date();
+            document.getElementById('invDue').valueAsDate = new Date(Date.now() + 14*24*60*60*1000);
+        }
+
+        // ===== RATES LOGIC (LKR) =====
+        function updateRateFields() {
+            const type = document.getElementById('rType').value;
+            const label = document.getElementById('rQtyLabel');
+            const qtyInput = document.getElementById('rQty');
+            const labels = { 'Per Day': 'Number of Days', 'Per Trip': 'Number of Trips', 'Per KM': 'Distance (KM)', 'Per Case': 'Number of Cases', 'Per Package': 'Number of Packages' };
+            label.innerHTML = labels[type] + ' <span class="required">*</span>';
+            qtyInput.placeholder = type ? `Enter ${type.split(' ')[1].toLowerCase()}` : '0';
+            liveCalc();
+        }
+
+        function liveCalc() {
+            const base = parseFloat(document.getElementById('rBase').value) || 0;
+            const qty = parseFloat(document.getElementById('rQty').value) || 0;
+            const total = (base * qty).toFixed(2);
+            document.getElementById('calcPreview').textContent = formatLKR(total);
+        }
+
+        function addRate(e) {
+            e.preventDefault();
+            if(currentUser?.role === 'driver') { showToast('Drivers cannot add rates', '❌'); return false; }
+            const type = document.getElementById('rType').value;
+            const base = parseFloat(document.getElementById('rBase').value);
+            const qty = parseFloat(document.getElementById('rQty').value);
+            const vIdx = document.getElementById('rVehicle').value;
+            const cIdx = document.getElementById('rClient').value;
+            if(!type || isNaN(base) || isNaN(qty)) { showToast('Please fill required fields!', '❌'); return false; }
+            const vName = vIdx !== '' ? vehicles[vIdx].number : 'None';
+            const cName = cIdx !== '' ? clients[cIdx].name : 'None';
+            const total = (base * qty).toFixed(2);
+            rates.push({ id: Date.now(), type, base, qty, total: parseFloat(total), vehicle: vName, client: cName, date: new Date().toLocaleDateString() });
+            localStorage.setItem('tasmaRates', JSON.stringify(rates));
+            renderRates(); updateRStats(); resetRateForm(); populateInvoiceDropdowns();
+            showToast(`Rate saved! Total: ${formatLKR(total)}`, '✅');
+            return false;
+        }
+
+        function renderRates(data = null) {
+            const list = data || rates;
+            const tbody = document.getElementById('r-tbody'), table = document.getElementById('r-table'), empty = document.getElementById('r-empty-state');
+            if(rates.length === 0) { table.style.display='none'; empty.style.display='block'; return; }
+            table.style.display='table'; empty.style.display='none';
+            tbody.innerHTML = list.map((r, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td><span class="badge badge-yes">${r.type}</span></td>
+                    <td>${formatLKR(r.base)}</td>
+                    <td>${r.qty}</td>
+                    <td class="highlight" style="color:#276749; font-weight:700;">${formatLKR(r.total)}</td>
+                    <td>${r.vehicle}</td>
+                    <td>${r.client}</td>
+                    <td><div class="action-buttons">
+                        ${currentUser.role === 'admin' ? `<button class="btn btn-danger" onclick="deleteRate(${rates.indexOf(r)})">🗑️</button>` : ''}
+                    </div></td>
+                </tr>`).join('');
+        }
+
+        function deleteRate(idx) {
+            if(currentUser.role !== 'admin') return;
+            if(confirm('Delete this rate entry?')) {
+                rates.splice(idx, 1);
+                localStorage.setItem('tasmaRates', JSON.stringify(rates));
+                renderRates(); updateRStats(); populateInvoiceDropdowns(); showToast('Rate deleted.', '🗑️');
+            }
+        }
+
+        function searchRates() {
+            const q = document.getElementById('rSearchInput').value.toLowerCase();
+            renderRates(rates.filter(r => r.type.toLowerCase().includes(q) || r.vehicle.toLowerCase().includes(q) || r.client.toLowerCase().includes(q)));
+        }
+
+        function resetRateForm() {
+            document.getElementById('rate-form').reset();
+            document.getElementById('calcPreview').textContent = 'Rs. 0.00';
+            updateRateFields();
+            populateRateDropdowns();
+        }
+
+        function updateRStats() {
+            const totalRev = rates.reduce((sum, r) => sum + r.total, 0);
+            const avg = rates.length ? (totalRev / rates.length).toFixed(2) : '0.00';
+            document.getElementById('total-rates').textContent = rates.length;
+            document.getElementById('total-revenue').textContent = formatLKR(totalRev);
+            document.getElementById('avg-rate').textContent = formatLKR(avg);
+            document.getElementById('r-count-badge').textContent = rates.length + ' rate' + (rates.length!==1?'s':'');
+        }
+
+        // ===== ASSIGNMENTS LOGIC =====
+        function addAssignment(e) {
+            e.preventDefault();
+            if(currentUser?.role === 'driver') { showToast('Drivers cannot create assignments', '❌'); return false; }
+            const cIdx = document.getElementById('aClient').value, vIdx = document.getElementById('aVehicle').value, date = document.getElementById('aDate').value, status = document.getElementById('aStatus').value;
+            if(!cIdx || !vIdx || !date) { showToast('Please select client, vehicle and date!', '❌'); return false; }
+            const client = clients[cIdx], vehicle = vehicles[vIdx];
+            assignments.push({ id: Date.now(), clientId: cIdx, clientName: client.name, clientPhone: client.phone, vehicleId: vIdx, vehicleNumber: vehicle.number, vehicleType: vehicle.type, driverName: vehicle.driver.name, date, status, created: new Date().toLocaleDateString() });
+            localStorage.setItem('tasmaAssignments', JSON.stringify(assignments));
+            renderAssignments(); updateAStats(); resetAssignmentForm(); populateInvoiceDropdowns();
+            showToast(`Assigned ${client.name} to ${vehicle.number}!`, '✅');
+            return false;
+        }
+
+        function renderAssignments(data = null) {
+            const list = data || assignments;
+            const tbody = document.getElementById('a-tbody'), table = document.getElementById('a-table'), empty = document.getElementById('a-empty-state');
+            if(assignments.length === 0) { table.style.display='none'; empty.style.display='block'; return; }
+            table.style.display='table'; empty.style.display='none';
+            tbody.innerHTML = list.map((a, idx) => {
+                let statusClass = a.status === 'Active' ? 'badge-yes' : (a.status === 'Pending' ? 'badge-yellow' : 'badge-no');
+                let statusIcon = a.status === 'Active' ? '🟢' : (a.status === 'Pending' ? '🟡' : '🔴');
+                return `<tr><td>${idx + 1}</td><td class="highlight">${escapeHtml(a.clientName)}<br><small style="color:#6b7c93">${escapeHtml(a.clientPhone)}</small></td><td>${escapeHtml(a.vehicleNumber)} <span class="badge" style="background:#edf2f7;">${a.vehicleType}</span></td><td>${escapeHtml(a.driverName)}</td><td>${a.date}</td><td><span class="badge ${statusClass}">${statusIcon} ${a.status}</span></td><td><div class="action-buttons">${currentUser.role === 'admin' ? `<button class="btn btn-danger" onclick="deleteAssignment(${assignments.indexOf(a)})">🗑️</button>` : ''}</div></td></tr>`;
+            }).join('');
+        }
+
+        function deleteAssignment(idx) {
+            if(currentUser.role !== 'admin') return;
+            if(confirm('Remove this assignment?')) {
+                assignments.splice(idx, 1);
+                localStorage.setItem('tasmaAssignments', JSON.stringify(assignments));
+                renderAssignments(); updateAStats(); populateInvoiceDropdowns(); showToast('Assignment removed.', '🗑️');
+            }
+        }
+
+        function searchAssignments() {
+            const q = document.getElementById('aSearchInput').value.toLowerCase();
+            renderAssignments(assignments.filter(a => a.clientName.toLowerCase().includes(q) || a.vehicleNumber.toLowerCase().includes(q) || a.driverName.toLowerCase().includes(q) || a.status.toLowerCase().includes(q)));
+        }
+
+        function resetAssignmentForm() { document.getElementById('assignment-form').reset(); populateAssignmentDropdowns(); document.getElementById('aDate').valueAsDate = new Date(); }
+        function updateAStats() {
+            const today = new Date().toLocaleDateString();
+            document.getElementById('total-assignments').textContent = assignments.length;
+            document.getElementById('active-assignments').textContent = assignments.filter(a => a.status === 'Active').length;
+            document.getElementById('today-assignments').textContent = assignments.filter(a => a.created === today).length;
+            document.getElementById('a-count-badge').textContent = assignments.length + ' assignment' + (assignments.length!==1?'s':'');
+        }
+
+        // ===== CLIENT FUNCTIONS =====
+        function addClient(e) { e.preventDefault();
+            if(currentUser?.role === 'driver') { showToast('Drivers cannot add clients', '❌'); return false; }
+            const n=document.getElementById('clientName').value.trim(), u=document.getElementById('clientUser').value.trim(), p=document.getElementById('clientPhone').value.trim();
+            if(!n||!u||!p){showToast('Please fill all fields!','❌');return false;}
+            if(clients.some(c=>c.user.toLowerCase()===u.toLowerCase())){document.getElementById('clientUser').classList.add('error');showToast('Username exists!','❌');return false;}
+            clients.push({id:Date.now(),name:n,user:u,phone:p,date:new Date().toLocaleDateString(),timestamp:Date.now()});
+            localStorage.setItem('tasmaClients',JSON.stringify(clients)); renderClients(); updateClientStats(); resetClientForm(); populateAssignmentDropdowns(); populateRateDropdowns(); populateInvoiceDropdowns();
+            showToast(`Client "${n}" added!`,'✅'); return false; }
+        function renderClients(data=null){ const d=data||clients; const t=document.getElementById('clients-tbody'), tb=document.getElementById('clients-table'), em=document.getElementById('empty-state');
+            if(clients.length===0){tb.style.display='none';em.style.display='block';return;} tb.style.display='table';em.style.display='none';
+            t.innerHTML=d.map((c,i)=>`<tr><td>${i+1}</td><td class="highlight">${escapeHtml(c.name)}</td><td><span class="badge" style="background:#edf2f7;">@${escapeHtml(c.user)}</span></td><td><span class="badge" style="background:#f7fafc;">${escapeHtml(c.phone)}</span></td><td>${c.date}</td><td><div class="action-buttons">${currentUser.role === 'admin' ? `<button class="btn btn-edit" onclick="editClient(${clients.indexOf(c)})">✏️</button><button class="btn btn-danger" onclick="deleteClient(${clients.indexOf(c)})">🗑️</button>` : ''}</div></td></tr>`).join(''); }
+        function editClient(i){ if(currentUser.role !== 'admin') return; const n=prompt('Client Name:',clients[i].name),u=prompt('Username:',clients[i].user),p=prompt('Phone:',clients[i].phone); if(n&&u&&p){clients[i]={...clients[i],name:n,user:u,phone:p};localStorage.setItem('tasmaClients',JSON.stringify(clients));renderClients();updateClientStats();populateAssignmentDropdowns();populateRateDropdowns();populateInvoiceDropdowns();showToast('Client updated!','✅');} }
+        function deleteClient(i){ if(currentUser.role !== 'admin') return; if(confirm(`Delete "${clients[i].name}"?`)){clients.splice(i,1);localStorage.setItem('tasmaClients',JSON.stringify(clients));renderClients();updateClientStats();populateAssignmentDropdowns();populateRateDropdowns();populateInvoiceDropdowns();showToast('Deleted.','🗑️');} }
+        function searchClients(){ const q=document.getElementById('searchInput').value.toLowerCase(); renderClients(clients.filter(c=>c.name.toLowerCase().includes(q)||c.user.toLowerCase().includes(q)||c.phone.includes(q))); }
+        function resetClientForm(){ document.getElementById('client-form').reset(); document.querySelectorAll('#client-form input').forEach(i=>i.classList.remove('error')); }
+        function updateClientStats(){ const today=new Date().toLocaleDateString(); document.getElementById('total-clients').textContent=clients.length; document.getElementById('active-clients').textContent=clients.length; document.getElementById('today-clients').textContent=clients.filter(c=>c.date===today).length; document.getElementById('client-count-badge').textContent=clients.length+' client'+(clients.length!==1?'s':''); }
+
+        // ===== VEHICLE FUNCTIONS =====
+        function addVehicle(e) { e.preventDefault();
+            if(currentUser?.role === 'driver') { showToast('Drivers cannot add vehicles', '❌'); return false; }
+            const vType=document.getElementById('vType').value, vNumber=document.getElementById('vNumber').value.trim(), vGps=document.getElementById('vGps').value, vRegDate=document.getElementById('vRegDate').value, vUserId=document.getElementById('vUserId').value.trim();
+            const dName=document.getElementById('dName').value.trim(), dTel=document.getElementById('dTel').value.trim(), dId=document.getElementById('dId').value.trim(), dLic=document.getElementById('dLic').value.trim();
+            if(!vType||!vNumber||!vRegDate||!dName||!dTel||!dId||!dLic){showToast('Please fill required fields!','❌');return false;}
+            const getFileName=(id)=>{const f=document.getElementById(id).files[0];return f?f.name:'None';};
+            const vehicle={ id:Date.now(), type:vType, number:vNumber, gps:vGps, regDate:vRegDate, userId:vUserId||'N/A',
+                files:{ img:getFileName('vImg'), book:getFileName('vBook'), fitness:getFileName('vFitness'), revenue:getFileName('vRevenue'), emission:getFileName('vEmission'), docs:getFileName('vDocs'), handover:document.getElementById('vOwnerDiff').checked?getFileName('vHandover'):'N/A'},
+                driver:{name:dName,tel:dTel,id:dId,lic:dLic},
+                helper:document.getElementById('hToggle').value==='Yes'?{name:document.getElementById('hName').value.trim()||'N/A',tel:document.getElementById('hTel').value.trim()||'N/A',id:document.getElementById('hId').value.trim()||'N/A',lic:document.getElementById('hLic').value.trim()||'N/A'}:'None', dateAdded:new Date().toLocaleDateString() };
+            vehicles.push(vehicle); localStorage.setItem('tasmaVehicles',JSON.stringify(vehicles)); renderVehicles(); updateVStats(); resetVehicleForm(); populateAssignmentDropdowns(); populateRateDropdowns(); populateInvoiceDropdowns();
+            showToast(`Vehicle ${vNumber} added!`,'✅'); return false; }
+        function renderVehicles(data=null){ const list=data||vehicles; const tbody=document.getElementById('v-tbody'), table=document.getElementById('v-table'), empty=document.getElementById('v-empty-state');
+            if(vehicles.length===0){table.style.display='none';empty.style.display='block';return;} table.style.display='table';empty.style.display='none';
+            tbody.innerHTML=list.map((v,idx)=>`<tr><td>${idx+1}</td><td><span class="badge" style="background:#edf2f7;">${v.type}</span></td><td class="highlight">${escapeHtml(v.number)}</td><td><span class="badge ${v.gps==='Yes'?'badge-yes':'badge-no'}">${v.gps}</span></td><td>${escapeHtml(v.driver.name)}<br><small style="color:#6b7c93">${escapeHtml(v.driver.tel)}</small></td><td>${v.helper!=='None'?escapeHtml(v.helper.name):'<span style="color:#a0aec0">None</span>'}</td><td>${v.regDate}</td><td><div class="action-buttons">${currentUser.role === 'admin' ? `<button class="btn btn-edit" onclick="editVehicle(${vehicles.indexOf(v)})">✏️</button><button class="btn btn-danger" onclick="deleteVehicle(${vehicles.indexOf(v)})">🗑️</button>` : ''}</div></td></tr>`).join(''); }
+        function editVehicle(idx){ if(currentUser.role !== 'admin') return; const v=vehicles[idx]; document.getElementById('editVIndex').value=idx; document.getElementById('editVType').value=v.type; document.getElementById('editVNumber').value=v.number; document.getElementById('editVGps').value=v.gps; document.getElementById('editVRegDate').value=v.regDate; document.getElementById('editDName').value=v.driver.name; document.getElementById('editDTel').value=v.driver.tel; document.getElementById('editVModal').classList.add('active'); }
+        function saveEditVehicle(e){ e.preventDefault(); if(currentUser.role !== 'admin') return; const idx=parseInt(document.getElementById('editVIndex').value);
+            vehicles[idx].type=document.getElementById('editVType').value; vehicles[idx].number=document.getElementById('editVNumber').value.trim();
+            vehicles[idx].gps=document.getElementById('editVGps').value; vehicles[idx].regDate=document.getElementById('editVRegDate').value;
+            vehicles[idx].driver.name=document.getElementById('editDName').value.trim(); vehicles[idx].driver.tel=document.getElementById('editDTel').value.trim();
+            localStorage.setItem('tasmaVehicles',JSON.stringify(vehicles)); renderVehicles(); updateVStats(); closeModal('editVModal'); populateAssignmentDropdowns(); populateRateDropdowns(); populateInvoiceDropdowns(); showToast('Vehicle updated!','✅'); return false; }
+        function deleteVehicle(idx){ if(currentUser.role !== 'admin') return; if(confirm(`Delete vehicle ${vehicles[idx].number}?`)){vehicles.splice(idx,1);localStorage.setItem('tasmaVehicles',JSON.stringify(vehicles));renderVehicles();updateVStats();populateAssignmentDropdowns();populateRateDropdowns();populateInvoiceDropdowns();showToast('Vehicle deleted.','🗑️');} }
+        function searchVehicles(){ const q=document.getElementById('vSearchInput').value.toLowerCase(); renderVehicles(vehicles.filter(v=>v.number.toLowerCase().includes(q)||v.type.toLowerCase().includes(q)||v.driver.name.toLowerCase().includes(q)||(v.helper!=='None'&&v.helper.name.toLowerCase().includes(q)))); }
+        function resetVehicleForm(){ document.getElementById('vehicle-form').reset(); document.querySelectorAll('.file-name-display').forEach(el=>el.textContent='No file chosen'); toggleSection('vOwnerDiff','vOwnerSection'); toggleSection('hToggle','hSection','Yes'); }
+        function updateVStats(){ document.getElementById('total-vehicles').textContent=vehicles.length; document.getElementById('gps-vehicles').textContent=vehicles.filter(v=>v.gps==='Yes').length; document.getElementById('total-drivers').textContent=vehicles.filter(v=>v.driver).length; document.getElementById('v-count-badge').textContent=vehicles.length+' vehicle'+(vehicles.length!==1?'s':''); }
+
+        // ===== GPS MONITORING TAB LOGIC =====
+        function showGpsHelp() {
+            const help = `🛰️ GPS Setup Guide:\n\n1. Install TraceMe365 GPS device in vehicle\n2. Register device on pro.traceme365.com\n3. Link vehicle number in Tasma Travel system\n4. View live tracking in GPS Monitoring tab\n\nNeed help? Contact: support@traceme365.com`;
+            alert(help);
+        }
+
+        function updateGpsStats() {
+            const total = vehicles.length;
+            const online = Math.floor(total * 0.8);
+            const moving = Math.floor(online * 0.5);
+            const alerts = Math.floor(Math.random() * 3);
+            
+            document.getElementById('gps-online').textContent = online;
+            document.getElementById('gps-moving').textContent = moving;
+            document.getElementById('gps-alerts').textContent = alerts;
+            document.getElementById('gps-count-badge').textContent = total + ' vehicle' + (total!==1?'s':'');
+            renderGpsTable();
+        }
+
+        function renderGpsTable() {
+            const tbody = document.getElementById('gps-tbody');
+            const table = document.getElementById('gps-table');
+            const empty = document.getElementById('gps-empty-state');
+            
+            if(vehicles.length === 0) { 
+                table.style.display='none'; 
+                empty.style.display='block'; 
+                return; 
+            }
+            
+            table.style.display='table'; 
+            empty.style.display='none';
+            
+            const locations = ['Colombo', 'Kandy', 'Galle', 'Negombo', 'Kurunegala', 'Matara', 'Jaffna'];
+            const statuses = [
+                {text:'🟢 Moving', class:'badge-yes'}, 
+                {text:'🟡 Idle', class:'badge-yellow'}, 
+                {text:'🔴 Offline', class:'badge-no'}
+            ];
+            
+            tbody.innerHTML = vehicles.slice(0, 10).map((v, idx) => {
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                const location = locations[Math.floor(Math.random() * locations.length)];
+                const lastUpdate = new Date(Date.now() - Math.random()*3600000).toLocaleTimeString('en-LK');
+                
+                return `
+                    <tr>
+                        <td class="highlight">${escapeHtml(v.number)} <span class="badge" style="background:#edf2f7;">${v.type}</span></td>
+                        <td>${escapeHtml(v.driver.name)}</td>
+                        <td><span class="badge ${status.class}">${status.text}</span></td>
+                        <td>📍 ${location}</td>
+                        <td style="font-size:13px;color:#6b7c93;">${lastUpdate}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="https://pro.traceme365.com/?lang=en" target="_blank" class="btn btn-edit" style="padding:4px 10px;font-size:12px;">🔍 View</a>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        // ===== UTILS =====
+        function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+        function showToast(msg, icon='✅'){ const t=document.getElementById('toast'); document.getElementById('toast-message').textContent=msg; document.getElementById('toast-icon').textContent=icon; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+        function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+        // ===== INIT =====
+        checkAuth();
+    </script>
+</body>
+</html>
